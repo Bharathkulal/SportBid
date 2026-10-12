@@ -18,8 +18,13 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
+function LoginForm() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectDestination = searchParams.get("redirect");
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,7 +40,7 @@ export default function LoginPage() {
     try {
       setServerError(null);
       setSubmitting(true);
-      await login(data);
+      await login(data, redirectDestination);
     } catch (err: any) {
       setServerError(err.message || "Failed to sign in. Please verify your credentials.");
     } finally {
@@ -128,5 +133,13 @@ export default function LoginPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#090a0f] text-slate-400 flex items-center justify-center">Loading Sign In...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
