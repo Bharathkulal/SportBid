@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,14 +17,6 @@ export const metadata: Metadata = {
   title: "SportBid — Pro Sports Registration, Poster Engine & Auction Platform",
   description:
     "Production sports player registration, automated matchday poster generation, organizer workflows, and live player auctions.",
-  keywords: [
-    "Sports Tournament Management",
-    "Player Auction",
-    "Sports Posters Generator",
-    "Cricket",
-    "Volleyball",
-    "Football",
-  ],
 };
 
 export default function RootLayout({
@@ -36,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-[#090a0f] text-slate-100`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

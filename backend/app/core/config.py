@@ -38,11 +38,15 @@ class Settings(BaseSettings):
     MONGODB_MIN_POOL_SIZE: int = 10
     MONGODB_MAX_POOL_SIZE: int = 50
 
-    # JWT Authentication
-    JWT_SECRET_KEY: str = "default_development_secret_key_change_in_production_32chars"
+    # JWT & Session Authentication
+    JWT_SECRET_KEY: str = "sportbid_super_secure_jwt_secret_key_development_32chars"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    SESSION_COOKIE_NAME: str = "sportbid_session"
+    SESSION_EXPIRE_DAYS: int = 7
+    COOKIE_SECURE: bool = False  # Set True in production over HTTPS
+    COOKIE_SAMESITE: str = "lax"  # "lax" for normal same-origin or localhost cross-port navigation
 
     # Cloudinary Image Storage
     CLOUDINARY_CLOUD_NAME: str = ""

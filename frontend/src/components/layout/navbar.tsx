@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { Trophy, ShieldCheck, ArrowRight } from "lucide-react";
+import { Trophy, ArrowRight, UserCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 
 export function Header() {
+  const { user, logout } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#090a0f]/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -21,28 +26,55 @@ export function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-          <Link href="#sports" className="hover:text-white transition-colors">
+          <Link href="/#sports" className="hover:text-white transition-colors">
             Supported Sports
           </Link>
-          <Link href="#features" className="hover:text-white transition-colors">
+          <Link href="/#features" className="hover:text-white transition-colors">
             Architecture
           </Link>
-          <Link href="#posters" className="hover:text-white transition-colors">
-            Auto Posters
-          </Link>
-          <Link href="#auctions" className="hover:text-white transition-colors">
-            Player Auctions
-          </Link>
+          {user && (
+            <Link
+              href={
+                user.role === "PLAYER"
+                  ? "/dashboard/player"
+                  : user.role === "ORGANIZER"
+                  ? "/dashboard/organizer"
+                  : "/dashboard/admin"
+              }
+              className="text-orange-400 hover:text-orange-300 transition-colors font-semibold"
+            >
+              My Dashboard
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-            Sign In
-          </Button>
-          <Button variant="primary" size="sm">
-            Launch Tournament
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Button>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-slate-300 hidden sm:inline-flex items-center gap-1.5">
+                <UserCircle className="w-4 h-4 text-orange-400" />
+                {user.full_name} ({user.role})
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => logout()}>
+                <LogOut className="w-3.5 h-3.5" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="primary" size="sm">
+                  Register
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
