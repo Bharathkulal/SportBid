@@ -38,7 +38,13 @@ class MongoDBManager:
             # Sessions collection: token hash unique index, and expires_at TTL/query index
             await self.db.sessions.create_index("session_token_hash", unique=True)
             await self.db.sessions.create_index("expires_at")
-            await self.db.sessions.create_index("user_id")
+            # Teams collection: unique team name per tournament
+            await self.db.teams.create_index([("tournament_id", 1), ("name", 1)], unique=True)
+            # Auctions collection: unique auction per tournament
+            await self.db.auctions.create_index("tournament_id", unique=True)
+            # Auction bids collection
+            await self.db.bids.create_index([("auction_id", 1), ("timestamp", -1)])
+            await self.db.bids.create_index("lot_registration_id")
             logger.info("MongoDB database indexes successfully verified/created.")
         except Exception as e:
             logger.error(f"Error ensuring MongoDB indexes: {e}")
