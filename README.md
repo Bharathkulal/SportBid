@@ -34,12 +34,33 @@ SportBid/
 
 ## 🚀 Quickstart & Development
 
-### 1. Prerequisites
+### 1. One-Click Unified Launcher (Recommended)
+You can run both frontend and backend concurrently using either method from the project root:
+
+- **Double-click / Terminal:**
+  ```cmd
+  run.bat
+  ```
+  *(or `start.bat`)*
+
+- **Via NPM from root:**
+  ```bash
+  npm run dev
+  ```
+
+To gracefully stop both running services, run:
+```cmd
+stop.bat
+```
+
+---
+
+### 2. Prerequisites
 - **Node.js**: v18+ (verified on v24.14.1)
 - **Python**: 3.11+ (verified on 3.14.4)
 - **MongoDB**: Local MongoDB instance (`mongodb://localhost:27017`) or MongoDB Atlas URI
 
-### 2. Environment Configuration
+### 3. Environment Configuration
 Copy `.env.example` to `.env` or set required environment variables:
 ```bash
 # Windows PowerShell

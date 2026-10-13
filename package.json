@@ -1,0 +1,12 @@
+{
+  "name": "sportbid-root",
+  "version": "1.0.0",
+  "description": "SportBid Monorepo - Sports Player Registration, Tournament Management & Live Auction Platform",
+  "scripts": {
+    "dev": "run.bat",
+    "start": "run.bat",
+    "stop": "stop.bat",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8000"
+  }
+}
