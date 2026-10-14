@@ -65,6 +65,13 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Ensure storage directory exists and mount static handler
+os.makedirs(settings.POSTER_OUTPUT_DIR, exist_ok=True)
+app.mount("/api/v1/storage", StaticFiles(directory=settings.POSTER_OUTPUT_DIR), name="storage")
+
 # Include API V1 Router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 

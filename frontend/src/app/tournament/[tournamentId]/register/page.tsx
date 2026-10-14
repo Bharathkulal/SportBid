@@ -24,6 +24,7 @@ import {
   User as UserIcon,
   Sparkles,
 } from "lucide-react";
+import { PlayerAuctionPoster } from "@/components/poster/PlayerAuctionPoster";
 
 import { Suspense } from "react";
 
@@ -127,6 +128,8 @@ function RegisterContent({
         player_name: data.player_name || user?.full_name,
         player_phone: data.player_phone || user?.phone_number,
         player_photo_base64: photoBase64,
+        village: (data.village || "KOKARNE").trim().toUpperCase(),
+        role: (data.role || "BLOCKER").trim().toUpperCase(),
         custom_field_values: customValues,
       };
 
@@ -261,28 +264,39 @@ function RegisterContent({
 
         {/* Success / Generated Poster State */}
         {registeredResult ? (
-          <div className="rounded-2xl bg-[#11141c] border border-emerald-500/40 p-8 text-center sports-card-glow">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-            <h2 className="text-2xl font-black uppercase text-white">Registration Received!</h2>
-            <p className="text-xs text-slate-300 mt-2 mb-6 max-w-lg mx-auto">
-              Your registration badge <span className="text-emerald-400 font-mono font-bold">{registeredResult.registration_number}</span> has been saved. The deterministic Python Pillow engine has rendered your draft match poster.
+          <div className="rounded-2xl bg-[#11141c] border border-emerald-500/40 p-6 sm:p-8 text-center sports-card-glow">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+              <h2 className="text-2xl font-black uppercase text-white">Registration Confirmed!</h2>
+            </div>
+            <p className="text-xs text-slate-300 mb-6 max-w-lg mx-auto">
+              Your official tournament registration has been recorded with serial number{" "}
+              <span className="text-yellow-400 font-mono font-bold text-sm">
+                #{registeredResult.serial_str || `${registeredResult.serial_number || 1}`.padStart(2, "0")}
+              </span>. Your personalized match poster has been generated below:
             </p>
 
-            {registeredResult.poster_url && (
-              <div className="max-w-xs mx-auto mb-6 rounded-xl overflow-hidden border border-slate-700 shadow-2xl">
-                <img
-                  src={registeredResult.poster_url}
-                  alt="Generated Player Poster"
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            )}
-
-            <div className="inline-flex items-center gap-2 mb-6 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-lg">
-              <span>Status: <strong>PENDING ORGANIZER APPROVAL</strong> &bull; Poster will become public upon review.</span>
+            {/* Personalized Player Poster (16:9 Slide with Download Option) */}
+            <div className="my-6">
+              <PlayerAuctionPoster
+                playerName={registeredResult.player_name}
+                serialStr={registeredResult.serial_str || `${registeredResult.serial_number || 1}`.padStart(2, "0")}
+                village={registeredResult.village || "KOKARNE"}
+                role={registeredResult.role || "BLOCKER"}
+                phone={registeredResult.player_phone}
+                sport={tournament.sport}
+                tournamentTitle={tournament.title}
+                photoUrl={photoBase64 || registeredResult.player_photo_url}
+                posterUrl={registeredResult.poster_url || undefined}
+                showActions={true}
+              />
             </div>
 
-            <div>
+            <div className="inline-flex items-center gap-2 mb-6 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-lg">
+              <span>Status: <strong>PENDING ORGANIZER REVIEW</strong> &bull; Slide is ready for auction presentation.</span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
                 variant="primary"
                 size="md"
@@ -377,25 +391,79 @@ function RegisterContent({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
-                    Athlete Full Name
+                    Athlete Full Name *
                   </label>
                   <input
                     type="text"
+                    placeholder="e.g. PRAVEEN KULAL"
                     defaultValue={user?.full_name}
                     {...register("player_name", { required: true })}
-                    className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
-                    Contact Phone Number
+                    Contact Phone Number *
                   </label>
                   <input
                     type="tel"
+                    placeholder="e.g. +91 9876543210"
                     defaultValue={user?.phone_number}
                     {...register("player_phone", { required: true })}
-                    className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
+                    Village / Place *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. KOKARNE / KUNDAPURA"
+                    defaultValue="KOKARNE"
+                    {...register("village", { required: true })}
+                    className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400 uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
+                    Playing Role *
+                  </label>
+                  <select
+                    defaultValue={tournament.sport === "VOLLEYBALL" ? "BLOCKER" : "ALL ROUNDER"}
+                    {...register("role", { required: true })}
+                    className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400 uppercase font-semibold"
+                  >
+                    {tournament.sport === "VOLLEYBALL" ? (
+                      <>
+                        <option value="BLOCKER">BLOCKER</option>
+                        <option value="ATTACKER / SPIKER">ATTACKER / SPIKER</option>
+                        <option value="SETTER">SETTER</option>
+                        <option value="ALL ROUNDER">ALL ROUNDER</option>
+                        <option value="LIBERO">LIBERO</option>
+                        <option value="UNIVERSAL">UNIVERSAL</option>
+                      </>
+                    ) : tournament.sport === "CRICKET" ? (
+                      <>
+                        <option value="ALL ROUNDER">ALL ROUNDER</option>
+                        <option value="BATSMAN">BATSMAN</option>
+                        <option value="FAST BOWLER">FAST BOWLER</option>
+                        <option value="SPIN BOWLER">SPIN BOWLER</option>
+                        <option value="WICKET KEEPER">WICKET KEEPER</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="FORWARD / STRIKER">FORWARD / STRIKER</option>
+                        <option value="MIDFIELDER">MIDFIELDER</option>
+                        <option value="DEFENDER">DEFENDER</option>
+                        <option value="GOALKEEPER">GOALKEEPER</option>
+                        <option value="ALL ROUNDER">ALL ROUNDER</option>
+                      </>
+                    )}
+                  </select>
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.schemas.auth import UserResponse
 from app.models.user import UserRole
@@ -138,6 +139,29 @@ async def list_tournament_registrations(
     cursor = db.tournament_registrations.find({"tournament_id": doc["_id"]}).sort("created_at", -1)
     regs = await cursor.to_list(length=200)
     return [doc_to_registration_response(r) for r in regs]
+
+
+@router.get(
+    "/{tournament_id}/posters/zip",
+    summary="Download All Tournament Posters (ZIP Archive)",
+)
+async def download_all_tournament_posters_zip(
+    tournament_id: str,
+    current_user: UserResponse = Depends(get_current_user),
+):
+    doc = await TournamentService.get_tournament_by_id_or_slug(tournament_id)
+    if str(doc["organizer_id"]) != current_user.id and current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have permission to download all posters for this tournament.",
+        )
+    zip_buffer = await TournamentService.get_tournament_posters_zip(tournament_id)
+    filename = f"{doc.get('slug', 'tournament')}_posters.zip"
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post(

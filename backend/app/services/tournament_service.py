@@ -57,11 +57,30 @@ def doc_to_tournament_response(doc: dict, total_regs: int = 0, approved_regs: in
 
 
 def doc_to_registration_response(doc: dict) -> RegistrationResponse:
+    village = (
+        doc.get("village")
+        or doc.get("custom_field_values", {}).get("village")
+        or doc.get("custom_field_values", {}).get("place")
+        or ""
+    )
+    role = (
+        doc.get("role")
+        or doc.get("custom_field_values", {}).get("role")
+        or doc.get("custom_field_values", {}).get("position")
+        or "All Rounder"
+    )
+    serial_num = doc.get("serial_number", 1)
+    serial_str = doc.get("serial_str") or f"{serial_num:02d}"
+
     return RegistrationResponse(
         id=str(doc["_id"]),
         tournament_id=str(doc["tournament_id"]),
         player_id=str(doc["player_id"]),
         registration_number=doc["registration_number"],
+        serial_number=serial_num,
+        serial_str=serial_str,
+        village=village,
+        role=role,
         player_name=doc["player_name"],
         player_phone=doc["player_phone"],
         player_photo_url=doc.get("player_photo_url", ""),
@@ -74,6 +93,7 @@ def doc_to_registration_response(doc: dict) -> RegistrationResponse:
         created_at=doc["created_at"],
         updated_at=doc["updated_at"],
     )
+
 
 
 class TournamentService:
@@ -246,10 +266,28 @@ class TournamentService:
                 detail="You are already registered for this tournament.",
             )
 
-        # 4. Generate unique registration sequence badge (e.g. VB-2026-0001)
+        # 4. Generate unique serial number sequence per tournament (01, 02, 03...)
         count = await db.tournament_registrations.count_documents({"tournament_id": tourney["_id"]})
-        sport_code = tourney["sport"][:2].upper()
-        reg_number = f"{sport_code}-{now.year}-{count + 1:04d}"
+        serial_number = count + 1
+        serial_str = f"{serial_number:02d}"
+
+        sport_name = tourney.get("sport", "VOLLEYBALL")
+        sport_code = str(sport_name)[:2].upper()
+        reg_number = f"{sport_code}-{now.year}-{serial_number:04d}"
+
+        # Extract village and role from payload or custom field values
+        village = (
+            payload.village
+            or payload.custom_field_values.get("village")
+            or payload.custom_field_values.get("place")
+            or "KOKARNE"
+        )
+        role = (
+            payload.role
+            or payload.custom_field_values.get("role")
+            or payload.custom_field_values.get("position")
+            or "BLOCKER"
+        )
 
         # 5. Handle Player Photo (base64 or direct bytes)
         photo_raw = photo_bytes
@@ -262,10 +300,11 @@ class TournamentService:
 
         photo_url = ""
         if photo_raw:
+            clean_name = re.sub(r"[^a-zA-Z0-9_-]", "_", payload.player_name)
             photo_url = await UploadService.upload_image_to_storage(
                 photo_raw,
                 folder=f"sportbid/players/{tourney['slug']}",
-                public_id=f"player_{player_user_id}_{uuid.uuid4().hex[:6]}",
+                public_id=f"player_{tourney['slug']}_{serial_str}_{clean_name}",
             )
 
         # 6. Save Initial Registration Record
@@ -273,6 +312,10 @@ class TournamentService:
             "tournament_id": tourney["_id"],
             "player_id": ObjectId(player_user_id),
             "registration_number": reg_number,
+            "serial_number": serial_number,
+            "serial_str": serial_str,
+            "village": village,
+            "role": role,
             "player_name": payload.player_name,
             "player_phone": payload.player_phone,
             "player_photo_url": photo_url,
@@ -291,28 +334,23 @@ class TournamentService:
 
         # 7. Render Poster with Deterministic Python Pillow Engine
         try:
-            sport_enum = SportType(tourney["sport"])
-            role_or_pos = (
-                payload.custom_field_values.get("position")
-                or payload.custom_field_values.get("role")
-                or "Athlete"
-            )
-            jersey_no = str(payload.custom_field_values.get("jersey_number") or "")
-
             poster_bytes = PosterEngine.generate_player_poster(
-                sport=sport_enum,
-                tournament_title=tourney["title"],
+                tournament_title=tourney.get("title", "SPORTBID TOURNAMENT"),
                 player_name=payload.player_name,
-                registration_no=reg_number,
-                role_or_pos=role_or_pos,
-                jersey_no=jersey_no,
+                serial_str=serial_str,
+                village=village,
+                role=role,
+                phone=payload.player_phone,
+                sport=str(sport_name),
                 player_image_bytes=photo_raw,
             )
 
+            clean_pname = re.sub(r"[^a-zA-Z0-9_-]", "_", payload.player_name)
             poster_url = await UploadService.upload_image_to_storage(
                 poster_bytes,
                 folder=f"sportbid/posters/{tourney['slug']}",
-                public_id=f"poster_{reg_number}",
+                public_id=f"poster_{tourney['slug']}_{serial_str}_{clean_pname}",
+                extension="png",
             )
 
             await db.tournament_registrations.update_one(
@@ -372,3 +410,48 @@ class TournamentService:
         await db.tournament_registrations.update_one({"_id": ObjectId(registration_id)}, {"$set": updates})
         updated = await db.tournament_registrations.find_one({"_id": ObjectId(registration_id)})
         return doc_to_registration_response(updated)
+
+    @staticmethod
+    async def get_tournament_posters_zip(tournament_id: str) -> io.BytesIO:
+        db = db_manager.db
+        tourney = await TournamentService.get_tournament_by_id_or_slug(tournament_id)
+        cursor = db.tournament_registrations.find({"tournament_id": tourney["_id"]}).sort("serial_number", 1)
+        regs = await cursor.to_list(length=500)
+
+        import zipfile
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for r in regs:
+                serial_s = r.get("serial_str") or f"{r.get('serial_number', 1):02d}"
+                p_name = r.get("player_name", "player").strip()
+                clean_name = re.sub(r"[^a-zA-Z0-9_-]", "_", p_name)
+                filename = f"{serial_s}_{clean_name}_poster.png"
+
+                # Check if poster_url exists or generate directly on the fly
+                p_bytes = None
+                p_url = r.get("poster_url")
+                if p_url and "/api/v1/storage/" in p_url:
+                    local_path = p_url.replace("/api/v1/storage/", f"{settings.POSTER_OUTPUT_DIR}/")
+                    if os.path.exists(local_path):
+                        try:
+                            with open(local_path, "rb") as f:
+                                p_bytes = f.read()
+                        except Exception:
+                            pass
+
+                if not p_bytes:
+                    p_bytes = PosterEngine.generate_player_poster(
+                        tournament_title=tourney.get("title", "SPORTBID TOURNAMENT"),
+                        player_name=r["player_name"],
+                        serial_str=serial_s,
+                        village=r.get("village", ""),
+                        role=r.get("role", "Athlete"),
+                        phone=r.get("player_phone", ""),
+                        sport=str(tourney.get("sport", "VOLLEYBALL")),
+                    )
+
+                zip_file.writestr(filename, p_bytes)
+
+        zip_buffer.seek(0)
+        return zip_buffer
+

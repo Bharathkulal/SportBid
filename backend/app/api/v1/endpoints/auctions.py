@@ -96,11 +96,21 @@ async def auctioneer_control(
     current_user: UserResponse = Depends(get_current_user),
 ):
     is_admin = current_user.role == UserRole.SUPER_ADMIN
+    action_clean = action.strip()
+    if ":" in action_clean:
+        cmd, param = action_clean.split(":", 1)
+        action_clean = f"{cmd.upper()}:{param}"
+    elif action_clean.upper().startswith("SELECT_LOT_"):
+        cmd, param = action_clean[:11], action_clean[11:]
+        action_clean = f"{cmd.upper()}{param}"
+    else:
+        action_clean = action_clean.upper()
+
     return await AuctionService.auctioneer_action(
         tournament_id=tournament_id,
         user_id=current_user.id,
         is_super_admin=is_admin,
-        action=action.upper(),
+        action=action_clean,
     )
 
 

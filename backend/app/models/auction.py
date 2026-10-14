@@ -44,6 +44,12 @@ class AuctionPlayerLot(BaseModel):
     role_or_pos: str
     jersey_number: Optional[str] = None
     poster_url: Optional[str] = None
+    serial_number: Optional[int] = None
+    serial_str: Optional[str] = None
+    village: Optional[str] = None
+    role: Optional[str] = None
+    phone: Optional[str] = None
+    photo_url: Optional[str] = None
     base_price: float
     current_bid: float = 0.0
     highest_bidder_team_id: Optional[str] = None

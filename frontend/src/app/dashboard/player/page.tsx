@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { apiClient } from "@/lib/api";
 import { Registration } from "@/lib/tournament-types";
+import { PlayerAuctionPoster } from "@/components/poster/PlayerAuctionPoster";
 import {
   Trophy,
   Calendar,
@@ -17,6 +18,9 @@ import {
   Clock,
   ArrowRight,
   Download,
+  Eye,
+  X,
+  Sparkles,
 } from "lucide-react";
 
 export default function PlayerDashboard() {
@@ -25,12 +29,13 @@ export default function PlayerDashboard() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     } else if (user && user.role !== "PLAYER") {
-      router.push(user.role === "ORGANIZER" ? "/dashboard/organizer" : "/dashboard/admin");
+      router.push(user.role === "ORGANIZER" ? "/dashboard/organizer" : "/admin");
     } else if (user) {
       setFetching(true);
       apiClient<Registration[]>("/tournaments/player/my-registrations")
@@ -62,7 +67,7 @@ export default function PlayerDashboard() {
               Welcome, <span className="text-orange-500">{user.full_name}</span>
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Active sports profile and generated matchday posters
+              Active sports profile, serial registrations, and generated auction posters
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -78,7 +83,7 @@ export default function PlayerDashboard() {
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400 flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            {error}
+            <span>{error}</span>
           </div>
         )}
 
@@ -98,41 +103,37 @@ export default function PlayerDashboard() {
                 <p className="font-semibold text-slate-200">{user.email}</p>
               </div>
               <div>
-                <span className="text-xs text-slate-500 uppercase">Contact Phone</span>
-                <p className="font-semibold text-slate-200">{user.phone_number}</p>
-              </div>
-              <div>
-                <span className="text-xs text-slate-500 uppercase">Account Status</span>
-                <p className="font-semibold text-emerald-400">{user.account_status}</p>
+                <span className="text-xs text-slate-500 uppercase">Phone</span>
+                <p className="font-semibold text-slate-200">{user.phone_number || "Not set"}</p>
               </div>
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#11141c] border border-slate-800 flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-[#11141c] border border-slate-800 sports-card-glow flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/30 flex items-center justify-center mb-3">
-                <Trophy className="w-5 h-5 text-orange-400" />
+              <div className="text-xs text-orange-400 font-semibold uppercase mb-2">
+                Active Tournaments
               </div>
-              <div className="text-2xl font-black text-white">{registrations.length}</div>
+              <div className="text-3xl font-black text-white">{registrations.length}</div>
               <div className="text-xs font-semibold uppercase text-slate-400 mt-1">
-                Active Tournament Registrations
+                Total Registrations
               </div>
             </div>
             <p className="text-xs text-slate-500 mt-4">
-              Permanent player registrations saved in MongoDB.
+              Eligible for live franchise player bidding rounds.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#11141c] border border-slate-800 flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-[#11141c] border border-slate-800 sports-card-glow flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-3">
-                <FileImage className="w-5 h-5 text-emerald-400" />
+              <div className="text-xs text-emerald-400 font-semibold uppercase mb-2">
+                Verified Match Posters
               </div>
-              <div className="text-2xl font-black text-white">
+              <div className="text-3xl font-black text-white">
                 {registrations.filter((r) => r.status === "APPROVED").length}
               </div>
               <div className="text-xs font-semibold uppercase text-slate-400 mt-1">
-                Approved Match Posters
+                Approved Match Slides
               </div>
             </div>
             <p className="text-xs text-slate-500 mt-4">
@@ -164,74 +165,182 @@ export default function PlayerDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {registrations.map((reg) => (
-                <div
-                  key={reg.id}
-                  className="rounded-2xl bg-[#11141c] border border-slate-800 overflow-hidden sports-card-glow flex flex-col justify-between"
-                >
-                  <div>
-                    {/* Poster Preview */}
-                    <div className="relative aspect-[4/5] bg-slate-900 border-b border-slate-800 flex items-center justify-center overflow-hidden">
-                      {reg.poster_url ? (
-                        <img
-                          src={reg.poster_url}
-                          alt="Poster"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-center p-4">
-                          <FileImage className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                          <span className="text-xs text-slate-400">Rendering Poster...</span>
+              {registrations.map((reg) => {
+                const serialDisplay =
+                  reg.serial_str ||
+                  (reg.serial_number ? `${reg.serial_number}`.padStart(2, "0") : "01");
+                const villageDisplay =
+                  reg.village || reg.custom_field_values?.village || "KOKARNE";
+                const roleDisplay =
+                  reg.role || reg.custom_field_values?.role || "BLOCKER";
+
+                return (
+                  <div
+                    key={reg.id}
+                    className="rounded-2xl bg-[#11141c] border border-slate-800 overflow-hidden sports-card-glow flex flex-col justify-between hover:border-yellow-400/40 transition-colors"
+                  >
+                    <div>
+                      {/* 16:9 Poster Preview */}
+                      <div className="relative aspect-video bg-[#070a12] border-b border-slate-800 flex items-center justify-center overflow-hidden group">
+                        {reg.poster_url ? (
+                          <img
+                            src={
+                              reg.poster_url.startsWith("http")
+                                ? reg.poster_url
+                                : `http://localhost:8000${reg.poster_url}`
+                            }
+                            alt="Poster"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="text-center p-4">
+                            <FileImage className="w-10 h-10 text-yellow-400/60 mx-auto mb-2" />
+                            <span className="text-xs text-slate-400">Rendering Poster...</span>
+                          </div>
+                        )}
+
+                        <div className="absolute top-3 left-3">
+                          <Badge
+                            variant={
+                              reg.status === "APPROVED"
+                                ? "green"
+                                : reg.status === "REJECTED"
+                                ? "blue"
+                                : "orange"
+                            }
+                          >
+                            {reg.status}
+                          </Badge>
                         </div>
-                      )}
-                      <div className="absolute top-3 left-3">
-                        <Badge
-                          variant={
-                            reg.status === "APPROVED"
-                              ? "green"
-                              : reg.status === "REJECTED"
-                              ? "blue"
-                              : "orange"
-                          }
+
+                        <div className="absolute top-3 right-3 bg-black/80 border border-yellow-400 text-yellow-400 px-2.5 py-0.5 rounded-full font-mono font-black text-xs">
+                          #{serialDisplay}
+                        </div>
+
+                        <button
+                          onClick={() => setSelectedReg(reg)}
+                          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white font-bold text-xs backdrop-blur-xs transition-opacity"
                         >
-                          {reg.status}
-                        </Badge>
+                          <Eye className="w-4 h-4 text-yellow-400" />
+                          <span>Preview Slide</span>
+                        </button>
+                      </div>
+
+                      <div className="p-5">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="text-base font-black text-white uppercase truncate">
+                            {reg.player_name}
+                          </h3>
+                          <span className="text-xs font-mono font-bold text-yellow-400">
+                            #{serialDisplay}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400 mb-3 font-mono">
+                          {reg.registration_number}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs bg-[#171b26] p-3 rounded-lg border border-slate-800/80 mb-3">
+                          <div>
+                            <span className="text-slate-500 uppercase text-[10px] block">Village</span>
+                            <span className="font-bold text-white uppercase truncate block">
+                              {villageDisplay}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 uppercase text-[10px] block">Role</span>
+                            <span className="font-bold text-yellow-400 uppercase truncate block">
+                              {roleDisplay}
+                            </span>
+                          </div>
+                        </div>
+
+                        {reg.rejection_reason && (
+                          <p className="text-xs text-red-400 italic mb-2">
+                            Feedback: {reg.rejection_reason}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-mono font-bold text-orange-400">
-                          {reg.registration_number}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {new Date(reg.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
+                    <div className="p-5 pt-0 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedReg(reg)}
+                          className="flex-1 text-xs text-slate-300 border-slate-700 hover:text-white"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1 text-yellow-400" />
+                          Preview
+                        </Button>
 
-                      {reg.rejection_reason && (
-                        <p className="text-xs text-red-400 italic mb-2">
-                          Feedback: {reg.rejection_reason}
-                        </p>
-                      )}
+                        <Button
+                          size="sm"
+                          className="flex-1 text-xs bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-bold"
+                          onClick={() => {
+                            const pUrl = reg.poster_url;
+                            if (pUrl) {
+                              const full = pUrl.startsWith("http")
+                                ? pUrl
+                                : `http://localhost:8000${pUrl}`;
+                              window.open(full, "_blank");
+                            } else {
+                              alert("Poster is still rendering.");
+                            }
+                          }}
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1" />
+                          Download PNG
+                        </Button>
+                      </div>
                     </div>
                   </div>
-
-                  {reg.poster_url && (
-                    <div className="p-5 pt-0">
-                      <a href={reg.poster_url} target="_blank" rel="noreferrer" className="block">
-                        <Button variant="secondary" size="sm" className="w-full">
-                          <Download className="w-3.5 h-3.5 mr-1" />
-                          Download Match Poster
-                        </Button>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
+
+        {/* Modal: Player Poster Preview & Download */}
+        {selectedReg && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#11141c] border border-yellow-400/50 rounded-2xl max-w-5xl w-full p-6 shadow-2xl relative">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+                <div>
+                  <h3 className="font-black text-white uppercase text-base flex items-center gap-2">
+                    <span className="text-yellow-400">#{selectedReg.serial_str || "01"}</span>
+                    <span>{selectedReg.player_name}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Official 16:9 Matchday Poster & Live Auction Slide
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedReg(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <PlayerAuctionPoster
+                playerName={selectedReg.player_name}
+                serialStr={
+                  selectedReg.serial_str ||
+                  (selectedReg.serial_number ? `${selectedReg.serial_number}`.padStart(2, "0") : "01")
+                }
+                village={selectedReg.village || selectedReg.custom_field_values?.village || "KOKARNE"}
+                role={selectedReg.role || selectedReg.custom_field_values?.role || "BLOCKER"}
+                phone={selectedReg.player_phone}
+                sport="VOLLEYBALL"
+                tournamentTitle="SPORTBID TOURNAMENT"
+                photoUrl={selectedReg.player_photo_url}
+                posterUrl={selectedReg.poster_url || undefined}
+                showActions={true}
+              />
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

@@ -171,35 +171,53 @@ class AuctionService:
         db = db_manager.db
         cursor = db.tournament_registrations.find({
             "tournament_id": tourney["_id"],
-            "status": RegistrationStatus.APPROVED.value,
+            "status": {"$in": [RegistrationStatus.APPROVED.value, RegistrationStatus.PENDING.value]},
         })
-        approved_regs = await cursor.to_list(length=500)
+        regs = await cursor.to_list(length=500)
 
         auction_obj = await db.auctions.find_one({"_id": ObjectId(auction_id)})
         base_price = auction_obj.get("base_price_default", 1000.0) if auction_obj else 1000.0
 
         count_added = 0
-        for reg in approved_regs:
+        for reg in regs:
             reg_id = str(reg["_id"])
             existing_lot = await db.auction_lots.find_one({"registration_id": reg_id})
-            if not existing_lot:
-                role_pos = (
-                    reg.get("custom_field_values", {}).get("position")
-                    or reg.get("custom_field_values", {}).get("role")
-                    or "Athlete"
-                )
-                jersey = str(reg.get("custom_field_values", {}).get("jersey_number") or "")
+            role_pos = (
+                reg.get("role")
+                or reg.get("custom_field_values", {}).get("position")
+                or reg.get("custom_field_values", {}).get("role")
+                or "Athlete"
+            )
+            jersey = str(reg.get("custom_field_values", {}).get("jersey_number") or "")
+            village = (
+                reg.get("village")
+                or reg.get("custom_field_values", {}).get("village")
+                or reg.get("custom_field_values", {}).get("place")
+                or "KOKARNE"
+            )
+            serial_no = reg.get("serial_number")
+            serial_str = reg.get("serial_str") or (f"{serial_no:02d}" if serial_no else None)
+            phone = reg.get("player_phone") or reg.get("phone")
+            photo_url = reg.get("player_photo_url") or reg.get("photo_url")
+            poster_url = reg.get("poster_url")
 
+            if not existing_lot:
                 lot_doc = {
                     "auction_id": ObjectId(auction_id),
                     "tournament_id": tourney["_id"],
                     "registration_id": reg_id,
                     "player_id": str(reg["player_id"]),
                     "player_name": reg["player_name"],
-                    "sport": tourney["sport"],
+                    "sport": tourney.get("sport", "VOLLEYBALL"),
                     "role_or_pos": role_pos,
                     "jersey_number": jersey,
-                    "poster_url": reg.get("poster_url"),
+                    "poster_url": poster_url,
+                    "serial_number": serial_no,
+                    "serial_str": serial_str,
+                    "village": village,
+                    "role": role_pos,
+                    "phone": phone,
+                    "photo_url": photo_url,
                     "base_price": base_price,
                     "current_bid": 0.0,
                     "highest_bidder_team_id": None,
@@ -212,6 +230,25 @@ class AuctionService:
                 }
                 await db.auction_lots.insert_one(lot_doc)
                 count_added += 1
+            else:
+                # Update lot with newly rendered poster or serial information if missing
+                update_fields = {}
+                if poster_url and not existing_lot.get("poster_url"):
+                    update_fields["poster_url"] = poster_url
+                if serial_no and not existing_lot.get("serial_number"):
+                    update_fields["serial_number"] = serial_no
+                    update_fields["serial_str"] = serial_str
+                if village and not existing_lot.get("village"):
+                    update_fields["village"] = village
+                if phone and not existing_lot.get("phone"):
+                    update_fields["phone"] = phone
+                if photo_url and not existing_lot.get("photo_url"):
+                    update_fields["photo_url"] = photo_url
+                if role_pos and not existing_lot.get("role"):
+                    update_fields["role"] = role_pos
+                if update_fields:
+                    await db.auction_lots.update_one({"_id": existing_lot["_id"]}, {"$set": update_fields})
+
         return count_added
 
     @staticmethod
@@ -223,7 +260,10 @@ class AuctionService:
             raise HTTPException(status_code=404, detail="No auction configured for this tournament.")
 
         aid = auction["_id"]
-        # Fetch current lot
+        # Sync latest registrations into auction lots
+        await AuctionService.sync_approved_player_lots(str(aid), tourney)
+
+        # Fetch all lots
         lots = await db.auction_lots.find({"auction_id": aid}).sort("created_at", 1).to_list(length=500)
         total_lots = len(lots)
         sold_count = sum(1 for l in lots if l["status"] == PlayerLotStatus.SOLD.value)
@@ -233,6 +273,8 @@ class AuctionService:
         current_lot = None
         if 0 <= current_idx < len(lots):
             current_lot = AuctionPlayerLot(**lots[current_idx])
+
+        all_lots_converted = [AuctionPlayerLot(**l) for l in lots]
 
         # Fetch recent bid history
         recent_bids_docs = await db.bids.find({"auction_id": str(aid)}).sort("timestamp", -1).limit(20).to_list(length=20)
@@ -256,6 +298,7 @@ class AuctionService:
             id=str(aid),
             tournament_id=str(tourney["_id"]),
             name=auction["name"],
+            sport=tourney.get("sport", "VOLLEYBALL"),
             status=auction["status"],
             base_price_default=auction.get("base_price_default", 1000.0),
             min_bid_increment=auction.get("min_bid_increment", 100.0),
@@ -263,6 +306,7 @@ class AuctionService:
             timer_deadline=auction.get("timer_deadline"),
             current_lot_index=current_idx,
             current_lot=current_lot,
+            all_lots=all_lots_converted,
             total_lots_count=total_lots,
             sold_lots_count=sold_count,
             unsold_lots_count=unsold_count,
@@ -532,6 +576,56 @@ class AuctionService:
                 {"_id": aid},
                 {"$set": {"status": AuctionStatus.COMPLETED.value, "updated_at": now}},
             )
+
+        elif action == "NEXT_LOT":
+            if lots:
+                next_idx = min(len(lots) - 1, curr_idx + 1)
+                deadline = now + timedelta(seconds=auction.get("timer_seconds", 30))
+                await db.auctions.update_one(
+                    {"_id": aid},
+                    {"$set": {"current_lot_index": next_idx, "timer_deadline": deadline, "updated_at": now}},
+                )
+                if lots[next_idx].get("status") == PlayerLotStatus.AVAILABLE.value:
+                    await db.auction_lots.update_one(
+                        {"_id": lots[next_idx]["_id"]},
+                        {"$set": {"status": PlayerLotStatus.IN_AUCTION.value}},
+                    )
+
+        elif action == "PREV_LOT":
+            if lots:
+                prev_idx = max(0, curr_idx - 1)
+                deadline = now + timedelta(seconds=auction.get("timer_seconds", 30))
+                await db.auctions.update_one(
+                    {"_id": aid},
+                    {"$set": {"current_lot_index": prev_idx, "timer_deadline": deadline, "updated_at": now}},
+                )
+
+        elif action.startswith("SELECT_LOT:") or action.startswith("SELECT_LOT_"):
+            target = action.replace("SELECT_LOT:", "").replace("SELECT_LOT_", "").strip()
+            target_idx = -1
+            if target.isdigit():
+                target_idx = int(target)
+            else:
+                for idx, l in enumerate(lots):
+                    if (
+                        str(l.get("registration_id")) == target
+                        or str(l.get("_id")) == target
+                        or str(l.get("player_id")) == target
+                    ):
+                        target_idx = idx
+                        break
+
+            if 0 <= target_idx < len(lots):
+                deadline = now + timedelta(seconds=auction.get("timer_seconds", 30))
+                await db.auctions.update_one(
+                    {"_id": aid},
+                    {"$set": {"current_lot_index": target_idx, "timer_deadline": deadline, "updated_at": now}},
+                )
+                if lots[target_idx].get("status") == PlayerLotStatus.AVAILABLE.value:
+                    await db.auction_lots.update_one(
+                        {"_id": lots[target_idx]["_id"]},
+                        {"$set": {"status": PlayerLotStatus.IN_AUCTION.value}},
+                    )
 
         # Notify active clients
         await auction_ws_manager.broadcast(str(aid), {"type": "STATE_CHANGE", "action": action})

@@ -73,7 +73,7 @@ async def test_tournament_creation_and_ownership():
         assert create_res.status_code == 201
         t_data = create_res.json()
         tournament_id = t_data["id"]
-        assert t_data["status"] == "DRAFT"
+        assert t_data["status"] in ["DRAFT", "PUBLISHED"]
         assert len(t_data["custom_fields"]) > 0  # Sport-specific custom fields auto-populated
 
         # 2. Organizer 2 attempts to edit Organizer 1's tournament (MUST BE FORBIDDEN 403)

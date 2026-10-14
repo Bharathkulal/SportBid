@@ -87,6 +87,7 @@ class AuctionStateResponse(BaseModel):
     id: str
     tournament_id: str
     name: str
+    sport: Optional[str] = "VOLLEYBALL"
     status: AuctionStatus
     base_price_default: float
     min_bid_increment: float
@@ -94,6 +95,7 @@ class AuctionStateResponse(BaseModel):
     timer_deadline: Optional[datetime] = None
     current_lot_index: int
     current_lot: Optional[AuctionPlayerLot] = None
+    all_lots: List[AuctionPlayerLot] = []
     total_lots_count: int
     sold_lots_count: int
     unsold_lots_count: int

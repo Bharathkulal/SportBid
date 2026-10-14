@@ -133,6 +133,8 @@ class RegistrationCreateRequest(BaseModel):
     player_name: str = Field(..., min_length=2, max_length=100)
     player_phone: str = Field(..., min_length=7, max_length=20)
     player_photo_base64: Optional[str] = None  # Or provided via multipart/upload
+    village: Optional[str] = None              # Village / Place
+    role: Optional[str] = None                 # Playing Role (e.g. Blocker, Setter, Attacker)
     custom_field_values: Dict[str, Any] = {}
 
 
@@ -146,6 +148,10 @@ class RegistrationResponse(BaseModel):
     tournament_id: str
     player_id: str
     registration_number: str
+    serial_number: Optional[int] = None
+    serial_str: Optional[str] = None
+    village: Optional[str] = None
+    role: Optional[str] = None
     player_name: str
     player_phone: str
     player_photo_url: str
@@ -157,3 +163,4 @@ class RegistrationResponse(BaseModel):
     reviewed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+
