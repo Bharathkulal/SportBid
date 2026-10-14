@@ -39,7 +39,7 @@ export function Header() {
                   ? "/dashboard/player"
                   : user.role === "ORGANIZER"
                   ? "/dashboard/organizer"
-                  : "/dashboard/admin"
+                  : "/admin"
               }
               className="text-orange-400 hover:text-orange-300 transition-colors font-semibold"
             >
