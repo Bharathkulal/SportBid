@@ -216,6 +216,8 @@ export default function CreateTournamentPage() {
                 {...register("rules")}
                 className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg p-4 text-sm text-white focus:outline-none focus:border-orange-500"
               />
+            </div>
+
             <div className="sm:col-span-2 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
               <div>
                 <span className="text-sm font-bold text-white uppercase block">Publish Tournament Immediately</span>
