@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Header, Footer } from "@/components/layout/navbar";
@@ -20,6 +21,8 @@ import {
   FileImage,
   Upload,
   ArrowRight,
+  User as UserIcon,
+  Sparkles,
 } from "lucide-react";
 
 import { Suspense } from "react";
@@ -39,6 +42,7 @@ function RegisterContent({
   const [fetching, setFetching] = useState(true);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [registeredResult, setRegisteredResult] = useState<Registration | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -46,19 +50,12 @@ function RegisterContent({
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   useEffect(() => {
-    // 1. Safe Redirect: If player is logged out, safely preserve destination URL
-    if (!loading && !user) {
-      const returnUrl = encodeURIComponent(`/tournament/${tournamentId}/register`);
-      router.push(`/login?redirect=${returnUrl}`);
-      return;
-    }
-
-    // 2. Load tournament details
+    // Load tournament details directly so public athletes and organizers can view the tournament
     apiClient<Tournament>(`/tournaments/${tournamentId}`)
       .then(setTournament)
       .catch((err) => setServerError(err.message))
       .finally(() => setFetching(false));
-  }, [tournamentId, user, loading, router]);
+  }, [tournamentId]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,7 +89,29 @@ function RegisterContent({
     }
   };
 
+  const handlePublishTournament = async () => {
+    try {
+      setPublishing(true);
+      setServerError(null);
+      await apiClient(`/tournaments/${tournamentId}`, {
+        method: "PATCH",
+        data: { status: "PUBLISHED" },
+      });
+      setTournament((prev) => (prev ? { ...prev, status: "PUBLISHED" } : null));
+    } catch (err: any) {
+      setServerError(`Failed to publish tournament: ${err.message}`);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const onSubmit = async (data: any) => {
+    if (!user) {
+      const returnUrl = encodeURIComponent(`/tournament/${tournamentId}/register`);
+      router.push(`/login?redirect=${returnUrl}`);
+      return;
+    }
+
     try {
       setServerError(null);
       setSubmitting(true);
@@ -152,8 +171,10 @@ function RegisterContent({
     );
   }
 
-  const isClosed = tournament.status !== "PUBLISHED";
+  const isOrganizer = user && tournament && String(tournament.organizer_id) === String(user.id);
+  const isDraft = tournament.status === "DRAFT";
   const deadlinePassed = new Date() > new Date(tournament.registration_deadline);
+  const isExplicitlyClosed = tournament.status === "REGISTRATION_CLOSED" || tournament.status === "COMPLETED";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#090a0f] text-slate-100">
@@ -166,7 +187,7 @@ function RegisterContent({
               <Badge variant={tournament.sport === "VOLLEYBALL" ? "orange" : "green"}>
                 {tournament.sport}
               </Badge>
-              <Badge variant={tournament.status === "PUBLISHED" ? "green" : "slate"}>
+              <Badge variant={tournament.status === "PUBLISHED" ? "green" : isDraft ? "orange" : "slate"}>
                 {tournament.status}
               </Badge>
             </div>
@@ -212,6 +233,32 @@ function RegisterContent({
           </div>
         </div>
 
+        {/* Organizer Notice Banner for DRAFT status */}
+        {isOrganizer && isDraft && (
+          <div className="mb-8 p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-white uppercase text-sm">
+                  Organizer Control: Tournament is in DRAFT Mode
+                </h4>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Public athletes who open this link cannot register until you publish this tournament. You can publish it with one click below, or test the registration form now.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="accent"
+              size="sm"
+              disabled={publishing}
+              onClick={handlePublishTournament}
+              className="shrink-0"
+            >
+              {publishing ? "Publishing..." : "Publish & Open Registrations Now"}
+            </Button>
+          </div>
+        )}
+
         {/* Success / Generated Poster State */}
         {registeredResult ? (
           <div className="rounded-2xl bg-[#11141c] border border-emerald-500/40 p-8 text-center sports-card-glow">
@@ -246,23 +293,75 @@ function RegisterContent({
               </Button>
             </div>
           </div>
-        ) : isClosed || deadlinePassed ? (
+        ) : !user ? (
+          /* Logged-out visitor call to action */
+          <div className="p-8 rounded-2xl bg-[#11141c] border border-slate-800 text-center sports-card-glow">
+            <UserIcon className="w-12 h-12 text-orange-400 mx-auto mb-3" />
+            <h3 className="text-xl font-black uppercase text-white">Sign In to Register for Tournament</h3>
+            <p className="text-xs text-slate-400 mt-2 mb-6 max-w-md mx-auto">
+              You need an athlete account to register, enter the tournament roster, and generate your official matchday poster.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link href={`/login?redirect=${encodeURIComponent(`/tournament/${tournamentId}/register`)}`}>
+                <Button variant="primary" size="md">
+                  Sign In to Register
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </Button>
+              </Link>
+              <Link href={`/register?redirect=${encodeURIComponent(`/tournament/${tournamentId}/register`)}`}>
+                <Button variant="secondary" size="md">
+                  Create Athlete Account
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : isExplicitlyClosed ? (
+          /* Explicitly closed state */
           <div className="p-8 rounded-2xl bg-[#11141c] border border-slate-800 text-center">
             <Clock className="w-10 h-10 text-slate-500 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-white uppercase">Registration Closed</h3>
             <p className="text-xs text-slate-400 mt-1 mb-4">
-              Registrations for this tournament are closed or the registration deadline has passed.
+              Registrations for this tournament have been closed by the organizer.
+            </p>
+            <Button variant="secondary" size="sm" onClick={() => router.push("/tournaments")}>
+              Explore Other Tournaments
+            </Button>
+          </div>
+        ) : deadlinePassed ? (
+          /* Deadline passed state */
+          <div className="p-8 rounded-2xl bg-[#11141c] border border-slate-800 text-center">
+            <Clock className="w-10 h-10 text-red-400 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-white uppercase">Registration Deadline Passed</h3>
+            <p className="text-xs text-slate-400 mt-1 mb-4">
+              The registration deadline for this tournament passed on {new Date(tournament.registration_deadline).toLocaleDateString()}.
+            </p>
+            <Button variant="secondary" size="sm" onClick={() => router.push("/tournaments")}>
+              Explore Other Tournaments
+            </Button>
+          </div>
+        ) : isDraft && !isOrganizer ? (
+          /* Public user viewing draft tournament */
+          <div className="p-8 rounded-2xl bg-[#11141c] border border-slate-800 text-center">
+            <Clock className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-white uppercase">Registration Opening Soon</h3>
+            <p className="text-xs text-slate-400 mt-1 mb-4">
+              The organizer has saved this tournament in Draft mode and has not opened public registrations yet. Please check back shortly!
             </p>
             <Button variant="secondary" size="sm" onClick={() => router.push("/tournaments")}>
               Explore Other Tournaments
             </Button>
           </div>
         ) : (
-          /* Registration Form */
+          /* Athlete Registration Form (Visible for Published tournaments or Organizer Preview/Testing) */
           <div className="rounded-2xl bg-[#11141c] border border-slate-800 p-8 sports-card-glow">
-            <h2 className="text-xl font-bold uppercase text-white mb-2">
-              Athlete Registration Form
-            </h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold uppercase text-white">
+                Athlete Registration Form
+              </h2>
+              {isOrganizer && isDraft && (
+                <Badge variant="orange">Organizer Preview Mode</Badge>
+              )}
+            </div>
             <p className="text-xs text-slate-400 mb-6">
               Complete your sport attributes to generate your official tournament poster.
             </p>
@@ -368,7 +467,7 @@ function RegisterContent({
                 className="w-full py-3 mt-4"
                 disabled={submitting}
               >
-                {submitting ? "Rendering Poster & Submitting..." : "Submit Registration"}
+                {submitting ? "Rendering Poster & Submitting..." : "Submit Registration & Generate Poster"}
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </form>

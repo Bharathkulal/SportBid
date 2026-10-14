@@ -23,6 +23,7 @@ interface CreateTournamentForm {
   end_date: string;
   registration_deadline: string;
   rules: string;
+  publish_immediately?: boolean;
 }
 
 export default function CreateTournamentPage() {
@@ -44,6 +45,7 @@ export default function CreateTournamentPage() {
       end_date: "",
       registration_deadline: "",
       rules: "",
+      publish_immediately: true,
     },
   });
 
@@ -66,6 +68,7 @@ export default function CreateTournamentPage() {
         registration_deadline: new Date(data.registration_deadline).toISOString(),
         entry_fee: parseFloat(data.entry_fee) || 0.0,
         rules: data.rules ? data.rules.split("\n").filter((r: string) => r.trim().length > 0) : [],
+        status: data.publish_immediately !== false ? "PUBLISHED" : "DRAFT",
       };
 
       const res = await apiClient<Tournament>("/tournaments", { data: payload });
@@ -213,6 +216,17 @@ export default function CreateTournamentPage() {
                 {...register("rules")}
                 className="w-full bg-[#171b26] border border-slate-700/80 rounded-lg p-4 text-sm text-white focus:outline-none focus:border-orange-500"
               />
+            <div className="sm:col-span-2 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+              <div>
+                <span className="text-sm font-bold text-white uppercase block">Publish Tournament Immediately</span>
+                <span className="text-xs text-slate-300">Open registration link for athletes right away after creation</span>
+              </div>
+              <input
+                type="checkbox"
+                {...register("publish_immediately")}
+                defaultChecked={true}
+                className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+              />
             </div>
           </div>
 
@@ -223,7 +237,7 @@ export default function CreateTournamentPage() {
             className="w-full py-3 mt-4"
             disabled={submitting}
           >
-            {submitting ? "Creating Tournament..." : "Create Tournament"}
+            {submitting ? "Launching Tournament..." : "Launch & Open Registrations"}
             <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </form>

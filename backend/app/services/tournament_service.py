@@ -122,7 +122,7 @@ class TournamentService:
             "registration_deadline": payload.registration_deadline,
             "entry_fee": payload.entry_fee,
             "rules": payload.rules,
-            "status": TournamentStatus.DRAFT.value,
+            "status": payload.status.value if payload.status else TournamentStatus.PUBLISHED.value,
             "custom_fields": [f.model_dump() for f in custom_fields],
             "created_at": now,
             "updated_at": now,

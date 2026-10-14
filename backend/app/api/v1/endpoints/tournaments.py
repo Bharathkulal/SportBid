@@ -18,7 +18,7 @@ from app.services.tournament_service import (
     doc_to_tournament_response,
     doc_to_registration_response,
 )
-from app.core.dependencies import get_current_user, require_organizer, require_player
+from app.core.dependencies import get_current_user, require_organizer, require_player, require_player_or_organizer
 from app.db.mongodb import db_manager
 
 router = APIRouter(prefix="/tournaments")
@@ -167,7 +167,7 @@ async def review_registration(
 async def register_player_for_tournament(
     tournament_id: str,
     payload: RegistrationCreateRequest,
-    current_user: UserResponse = Depends(require_player),
+    current_user: UserResponse = Depends(require_player_or_organizer),
 ):
     return await TournamentService.register_player(
         tournament_id=tournament_id,

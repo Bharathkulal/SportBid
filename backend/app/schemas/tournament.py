@@ -86,6 +86,7 @@ class TournamentCreateRequest(BaseModel):
     registration_deadline: datetime
     entry_fee: float = Field(0.0, ge=0.0)
     rules: List[str] = []
+    status: Optional[TournamentStatus] = TournamentStatus.PUBLISHED
     custom_fields: Optional[List[CustomFieldDefinition]] = None
 
 

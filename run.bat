@@ -101,7 +101,7 @@ echo ===========================================================================
 
 :: Start FastAPI Backend
 echo [1/2] Launching FastAPI Backend on http://localhost:8000 ...
-start "SportBid - Backend (FastAPI :8000)" cmd /k "title SportBid Backend (FastAPI :8000) && cd /d "%BACKEND_DIR%" && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+start "SportBid - Backend (FastAPI :8000)" cmd /k "title SportBid Backend (FastAPI :8000) && cd /d "%BACKEND_DIR%" && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
 :: Start Next.js Frontend
 echo [2/2] Launching Next.js Frontend on http://localhost:3000 ...

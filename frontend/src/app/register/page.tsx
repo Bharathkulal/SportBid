@@ -10,6 +10,8 @@ import { Header, Footer } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { User, Mail, Phone, Lock, Building, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 
 const registerSchema = z.object({
@@ -23,9 +25,11 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { registerPlayer, registerOrganizer } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectDestination = searchParams.get("redirect");
   const [role, setRole] = useState<"PLAYER" | "ORGANIZER">("PLAYER");
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export default function RegisterPage() {
       }
       setSuccessMsg("Registration successful! Redirecting you to sign in...");
       setTimeout(() => {
-        router.push("/login");
+        router.push(redirectDestination ? `/login?redirect=${encodeURIComponent(redirectDestination)}` : "/login");
       }, 1500);
     } catch (err: any) {
       setServerError(err.message || "Registration failed. Please check your details.");
@@ -244,7 +248,7 @@ export default function RegisterPage() {
           <div className="mt-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-400">
             Already registered on SportBid?{" "}
             <Link
-              href="/login"
+              href={redirectDestination ? `/login?redirect=${encodeURIComponent(redirectDestination)}` : "/login"}
               className="font-semibold text-orange-400 hover:text-orange-300 transition-colors"
             >
               Sign In Instead
@@ -254,5 +258,13 @@ export default function RegisterPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#090a0f] text-slate-400 flex items-center justify-center">Loading Registration...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

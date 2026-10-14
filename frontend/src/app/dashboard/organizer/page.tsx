@@ -62,8 +62,16 @@ export default function OrganizerDashboard() {
     }
   };
 
-  const shareWhatsApp = (t: Tournament) => {
+  const shareWhatsApp = async (t: Tournament) => {
     if (typeof window !== "undefined") {
+      if (t.status === "DRAFT") {
+        const shouldPublish = confirm(
+          `"${t.title}" is currently in DRAFT (registrations closed).\n\nDo you want to Publish it now so athletes can register when they open your WhatsApp link?`
+        );
+        if (shouldPublish) {
+          await togglePublish(t.id, t.status);
+        }
+      }
       const url = `${window.location.origin}/tournament/${t.id}/register`;
       const text = encodeURIComponent(
         `🏆 Registrations are open for ${t.title}! Register and get your official matchday poster here:\n${url}`
@@ -72,8 +80,16 @@ export default function OrganizerDashboard() {
     }
   };
 
-  const copyUrl = (t: Tournament) => {
+  const copyUrl = async (t: Tournament) => {
     if (typeof window !== "undefined") {
+      if (t.status === "DRAFT") {
+        const shouldPublish = confirm(
+          `"${t.title}" is currently in DRAFT (registrations closed).\n\nDo you want to Publish it now so athletes can register when they open this link?`
+        );
+        if (shouldPublish) {
+          await togglePublish(t.id, t.status);
+        }
+      }
       const url = `${window.location.origin}/tournament/${t.id}/register`;
       navigator.clipboard.writeText(url);
       alert("Registration link copied to clipboard!");
@@ -181,11 +197,11 @@ export default function OrganizerDashboard() {
                       </Button>
                     </Link>
                     <Button
-                      variant="secondary"
+                      variant={t.status === "PUBLISHED" ? "secondary" : "accent"}
                       size="sm"
                       onClick={() => togglePublish(t.id, t.status)}
                     >
-                      {t.status === "PUBLISHED" ? "Close" : "Publish"}
+                      {t.status === "PUBLISHED" ? "Close" : "Publish & Open"}
                     </Button>
                   </div>
 
