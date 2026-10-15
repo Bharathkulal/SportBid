@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,13 +40,17 @@ export function Hero() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button variant="primary" size="lg" className="w-full sm:w-auto">
-            Get Started as Organizer
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-          <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-            Explore Tournaments
-          </Button>
+          <Link href="/login" className="w-full sm:w-auto">
+            <Button variant="primary" size="lg" className="w-full sm:w-auto">
+              Get Started as Organizer
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </Link>
+          <Link href="/tournaments" className="w-full sm:w-auto">
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+              Explore Tournaments
+            </Button>
+          </Link>
         </div>
 
         {/* Highlight Metrics */}
