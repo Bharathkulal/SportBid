@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AuctionState, Team, AuctionPlayerLot } from "@/lib/auction-types";
 import { useAuth } from "@/lib/auth-context";
-import { apiClient } from "@/lib/api";
+import { apiClient, getWebSocketUrl } from "@/lib/api";
 import { PlayerAuctionPoster } from "@/components/poster/PlayerAuctionPoster";
 import {
   Gavel,
@@ -74,7 +74,7 @@ function AuctionRoomContent({
     loadState();
 
     // Establish WebSocket for live real-time auction event streaming
-    const wsUrl = `ws://localhost:8000/api/v1/tournaments/${tournamentId}/auction/ws`;
+    const wsUrl = getWebSocketUrl(`/tournaments/${tournamentId}/auction/ws`);
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

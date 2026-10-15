@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tournament, Registration } from "@/lib/tournament-types";
 import { useAuth } from "@/lib/auth-context";
-import { apiClient } from "@/lib/api";
+import { apiClient, API_BASE_URL, getFullStorageUrl } from "@/lib/api";
 import { PlayerAuctionPoster } from "@/components/poster/PlayerAuctionPoster";
 import {
   CheckCircle2,
@@ -91,7 +91,7 @@ function ReviewContent({
   const handleDownloadAllZip = async () => {
     try {
       setDownloadingZip(true);
-      const url = `http://localhost:8000/api/v1/tournaments/${tournamentId}/posters/zip`;
+      const url = `${API_BASE_URL}/tournaments/${tournamentId}/posters/zip`;
       window.open(url, "_blank");
     } catch (e: any) {
       alert(`Download failed: ${e.message}`);
@@ -198,11 +198,7 @@ function ReviewContent({
                     <div className="relative aspect-video bg-[#070a12] border-b border-slate-800 flex items-center justify-center overflow-hidden group">
                       {reg.poster_url ? (
                         <img
-                          src={
-                            reg.poster_url.startsWith("http")
-                              ? reg.poster_url
-                              : `http://localhost:8000${reg.poster_url}`
-                          }
+                          src={getFullStorageUrl(reg.poster_url)}
                           alt="Match Poster"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -297,10 +293,7 @@ function ReviewContent({
                         onClick={() => {
                           const pUrl = reg.poster_url;
                           if (pUrl) {
-                            const full = pUrl.startsWith("http")
-                              ? pUrl
-                              : `http://localhost:8000${pUrl}`;
-                            window.open(full, "_blank");
+                            window.open(getFullStorageUrl(pUrl), "_blank");
                           } else {
                             alert("Poster is still rendering.");
                           }

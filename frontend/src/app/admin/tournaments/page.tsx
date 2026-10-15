@@ -24,7 +24,7 @@ import {
   MapPin,
   CheckCircle2,
 } from "lucide-react";
-import { apiClient } from "@/lib/api";
+import { apiClient, API_BASE_URL, getFullStorageUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Registration } from "@/lib/tournament-types";
 import { PlayerAuctionPoster } from "@/components/poster/PlayerAuctionPoster";
@@ -149,7 +149,7 @@ export default function AdminTournamentsPage() {
     try {
       setDownloadingZip(true);
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`http://localhost:8000/api/v1/tournaments/${tourneyId}/posters/zip`, {
+      const res = await fetch(`${API_BASE_URL}/tournaments/${tourneyId}/posters/zip`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
@@ -174,9 +174,7 @@ export default function AdminTournamentsPage() {
   const handleDownloadPoster = async (reg: Registration) => {
     try {
       if (reg.poster_url) {
-        const fullUrl = reg.poster_url.startsWith("http")
-          ? reg.poster_url
-          : `http://localhost:8000${reg.poster_url}`;
+        const fullUrl = getFullStorageUrl(reg.poster_url);
         const res = await fetch(fullUrl);
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);

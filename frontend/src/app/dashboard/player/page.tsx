@@ -7,7 +7,7 @@ import { Header, Footer } from "@/components/layout/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
-import { apiClient } from "@/lib/api";
+import { apiClient, getFullStorageUrl } from "@/lib/api";
 import { Registration } from "@/lib/tournament-types";
 import { PlayerAuctionPoster } from "@/components/poster/PlayerAuctionPoster";
 import {
@@ -184,11 +184,7 @@ export default function PlayerDashboard() {
                       <div className="relative aspect-video bg-[#070a12] border-b border-slate-800 flex items-center justify-center overflow-hidden group">
                         {reg.poster_url ? (
                           <img
-                            src={
-                              reg.poster_url.startsWith("http")
-                                ? reg.poster_url
-                                : `http://localhost:8000${reg.poster_url}`
-                            }
+                            src={getFullStorageUrl(reg.poster_url)}
                             alt="Poster"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -280,10 +276,7 @@ export default function PlayerDashboard() {
                           onClick={() => {
                             const pUrl = reg.poster_url;
                             if (pUrl) {
-                              const full = pUrl.startsWith("http")
-                                ? pUrl
-                                : `http://localhost:8000${pUrl}`;
-                              window.open(full, "_blank");
+                              window.open(getFullStorageUrl(pUrl), "_blank");
                             } else {
                               alert("Poster is still rendering.");
                             }

@@ -33,7 +33,10 @@ def get_font(size: int, bold: bool = True) -> ImageFont.FreeTypeFont:
         "C:/Windows/Fonts/segoeuib.ttf" if bold else "C:/Windows/Fonts/segoeui.ttf",
         "C:/Windows/Fonts/impact.ttf",
         "C:/Windows/Fonts/tahomabd.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
     ]
     for path in font_paths:
         if os.path.exists(path):

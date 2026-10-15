@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { Download, Maximize2, Minimize2, Trophy, Phone, MapPin, User, Shield, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getFullStorageUrl } from "@/lib/api";
 
 interface PlayerAuctionPosterProps {
   playerName: string;
@@ -54,11 +55,7 @@ export function PlayerAuctionPoster({
     try {
       setDownloading(true);
       if (posterUrl) {
-        // If relative URL to backend storage, point to backend host
-        const fullUrl = posterUrl.startsWith("http")
-          ? posterUrl
-          : `http://localhost:8000${posterUrl}`;
-
+        const fullUrl = getFullStorageUrl(posterUrl);
         const response = await fetch(fullUrl);
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
