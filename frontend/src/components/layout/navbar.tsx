@@ -108,7 +108,7 @@ export function Header() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/register">
                 <Button variant="primary" size="sm">
                   Register
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -121,7 +121,7 @@ export function Header() {
         {/* Mobile Action & Menu Toggle */}
         <div className="flex items-center gap-2 md:hidden">
           {!user && (
-            <Link href="/login">
+            <Link href="/tournaments">
               <span className="text-xs font-semibold text-yellow-400 px-2 py-1 rounded bg-yellow-400/10 border border-yellow-400/20">
                 Tournaments
               </span>
@@ -198,7 +198,7 @@ export function Header() {
           {!user && (
             <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-2">
               <Link
-                href="/login"
+                href="/register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full"
               >
@@ -289,7 +289,7 @@ export function Footer() {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/login" className="hover:text-yellow-400 transition-colors">
+                <Link href="/register" className="hover:text-yellow-400 transition-colors">
                   Athlete Registration
                 </Link>
               </li>
