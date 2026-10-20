@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,15 +20,27 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-
 function LoginForm() {
-  const { login } = useAuth();
+  const { user, login } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectDestination = searchParams.get("redirect");
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (redirectDestination && redirectDestination.startsWith("/")) {
+        router.replace(redirectDestination);
+      } else if (user.role === "PLAYER") {
+        router.replace("/dashboard/player");
+      } else if (user.role === "ORGANIZER") {
+        router.replace("/dashboard/organizer");
+      } else if (user.role === "SUPER_ADMIN") {
+        router.replace("/admin");
+      }
+    }
+  }, [user, redirectDestination, router]);
 
   const {
     register,

@@ -53,13 +53,13 @@ export function Hero() {
 
           {/* Action CTAs */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-none">
-            <Link href="/tournaments" className="w-full sm:w-auto">
+            <Link href="/login" className="w-full sm:w-auto">
               <Button variant="primary" size="lg" className="w-full sm:w-auto justify-center">
                 Explore Active Tournaments
                 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
             </Link>
-            <Link href="/register" className="w-full sm:w-auto">
+            <Link href="/login" className="w-full sm:w-auto">
               <Button variant="secondary" size="lg" className="w-full sm:w-auto justify-center">
                 <Trophy className="w-4 h-4 mr-1.5 text-yellow-400" />
                 Organize a Tournament
@@ -160,7 +160,7 @@ export function Hero() {
                 <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
                   <div className="bg-yellow-400 h-full rounded-full" style={{ width: "65%" }} />
                 </div>
-                <Link href="/tournaments" className="block">
+                <Link href="/login" className="block">
                   <Button variant="primary" size="sm" className="w-full justify-center">
                     <Gavel className="w-3.5 h-3.5 mr-1.5" />
                     Join Live Auction Rooms
@@ -204,7 +204,7 @@ export function FeaturedTournaments() {
               Browse official tournaments currently open for athlete registration and live bidding.
             </p>
           </div>
-          <Link href="/tournaments" className="shrink-0">
+          <Link href="/login" className="shrink-0">
             <Button variant="secondary" size="sm" className="w-full sm:w-auto">
               View All Tournaments
               <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
@@ -233,12 +233,12 @@ export function FeaturedTournaments() {
               New tournament seasons and live auctions are published regularly. Register as an organizer to host your own sporting league or check back soon.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/register" className="w-full sm:w-auto">
+              <Link href="/login" className="w-full sm:w-auto">
                 <Button variant="primary" size="sm" className="w-full sm:w-auto">
                   Host a Tournament
                 </Button>
               </Link>
-              <Link href="/tournaments" className="w-full sm:w-auto">
+              <Link href="/login" className="w-full sm:w-auto">
                 <Button variant="secondary" size="sm" className="w-full sm:w-auto">
                   Check Directory
                 </Button>
@@ -289,7 +289,7 @@ export function FeaturedTournaments() {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-slate-800">
-                  <Link href={`/tournament/${t.id}/register`} className="block">
+                  <Link href="/login" className="block">
                     <Button variant="primary" size="sm" className="w-full justify-center">
                       Register as Player
                       <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
@@ -458,7 +458,7 @@ export function SportsCategories() {
                   {sport.roles}
                 </div>
                 <Link
-                  href="/tournaments"
+                  href="/login"
                   className="inline-flex items-center text-xs font-semibold text-yellow-400 hover:text-yellow-300 transition-colors group"
                 >
                   View Active Tournaments
@@ -558,13 +558,13 @@ export function CallToAction() {
               Equip your league, college fest, or franchise tournament with professional player registrations, instant matchday posters, and high-stakes live bidding.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/register" className="w-full sm:w-auto">
+              <Link href="/login" className="w-full sm:w-auto">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto justify-center">
                   Get Started as Organizer
                   <ArrowRight className="w-4 h-4 ml-1.5" />
                 </Button>
               </Link>
-              <Link href="/tournaments" className="w-full sm:w-auto">
+              <Link href="/login" className="w-full sm:w-auto">
                 <Button variant="secondary" size="lg" className="w-full sm:w-auto justify-center">
                   Browse Active Tournaments
                 </Button>
